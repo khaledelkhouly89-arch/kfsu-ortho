@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>KFSU Ortho Registry</title>
+<meta name="theme-color" content="#0d9488">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%230d9488'/%3E%3Cpath d='M8 6.5a2 2 0 0 0-2.8 2.8L6.4 10.5l7.1 7.1 1.2 1.2a2 2 0 1 0 2.8-2.8l-1.2-1.2 1.2-1.2a2 2 0 1 0-2.8-2.8l-1.2 1.2-4.3-4.3A2 2 0 0 0 8 6.5Z' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="loading" class="loading"><div class="spinner"></div><div>Loading registry…</div></div>
+
+<!-- ======================= LOGIN ======================= -->
+<section id="loginScreen" class="login hidden">
+  <div class="login-art">
+    <div class="eyebrow" style="color:#5eead4">Kafr El-Sheikh University Hospital</div>
+    <h1>Orthopedic &amp; Trauma Surgery<br>Patient Registry</h1>
+    <p class="ar">قسم جراحة العظام والكسور — سجل المرضى</p>
+  </div>
+  <div class="login-form">
+    <form id="loginForm" autocomplete="on">
+      <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.5 3.5a2.5 2.5 0 0 0-3.536 3.536L6.5 8.57l8.93 8.93 1.535 1.536a2.5 2.5 0 1 0 3.536-3.536L18.964 13.964 20.5 12.43a2.5 2.5 0 0 0-3.536-3.536l-1.535 1.535-5.394-5.394A2.5 2.5 0 0 0 8.5 3.5Z"/></svg></div>
+      <h2>Staff sign in</h2>
+      <p class="muted small" style="margin:0 0 18px">Access is limited to department staff. Ask the registry administrator for an account.</p>
+      <div id="loginError" class="err hidden" role="alert"></div>
+      <div style="margin:12px 0">
+        <label class="lbl" for="loginEmail">Email</label>
+        <input class="inp" id="loginEmail" type="email" autocomplete="username" required>
+      </div>
+      <div style="margin:12px 0 18px">
+        <label class="lbl" for="loginPassword">Password</label>
+        <input class="inp" id="loginPassword" type="password" autocomplete="current-password" required>
+      </div>
+      <button class="btn primary" type="submit" style="width:100%" id="loginBtn">Sign in</button>
+    </form>
+  </div>
+</section>
+
+<!-- ======================= APP ======================= -->
+<div id="app" class="hidden">
+  <header class="topbar">
+    <div class="wrap">
+      <div class="brand">
+        <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f172a" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.5 3.5a2.5 2.5 0 0 0-3.536 3.536L6.5 8.57l8.93 8.93 1.535 1.536a2.5 2.5 0 1 0 3.536-3.536L18.964 13.964 20.5 12.43a2.5 2.5 0 0 0-3.536-3.536l-1.535 1.535-5.394-5.394A2.5 2.5 0 0 0 8.5 3.5Z"/></svg></div>
+        <div style="min-width:0">
+          <div class="brand-t">KFSU Ortho Registry</div>
+          <div class="brand-s"><span id="hdrDept"></span> · <span class="ar" id="hdrDeptAr"></span></div>
+        </div>
+      </div>
+      <nav class="tabs" role="tablist" aria-label="Sections">
+        <button class="tab" role="tab" data-view="register" aria-selected="true">+ Register</button>
+        <button class="tab" role="tab" data-view="patients" aria-selected="false">Patients <span class="count" id="countPatients">0</span></button>
+        <button class="tab" role="tab" data-view="or" aria-selected="false">Operative list</button>
+        <button class="tab" role="tab" data-view="reports" aria-selected="false">Reports</button>
+      </nav>
+      <div class="user-box">
+        <span id="userEmail"></span>
+        <button class="btn" id="pwBtn" type="button">Change password</button>
+        <button class="btn" id="signOutBtn" type="button">Sign out</button>
+      </div>
+    </div>
+  </header>
+  <div id="demoBar" class="demo-bar hidden"><div class="wrap"><b>Demo mode</b> — not connected to the shared database yet. Records are saved only in this browser. Add your Supabase details to <span class="mono">config.js</span> to go live (see SETUP-GUIDE). <button class="btn sm" id="seedDemoBtn" type="button" style="margin-left:6px">Load sample patients</button></div></div>
+
+  <main class="wrap">
+
+    <!-- ============ REGISTER / EDIT ============ -->
+    <section id="view-register" class="view">
+      <div class="view-head">
+        <div>
+          <div class="eyebrow" id="regEyebrow">New patient</div>
+          <h2 id="regTitle">Patient registration</h2>
+        </div>
+      </div>
+      <div class="reg-layout">
+        <!-- Skeleton -->
+        <div class="card skel-card">
+          <div class="card-h">
+            <div><div class="eyebrow">Step 1</div><h3>Affected region</h3></div>
+            <button class="btn sm" type="button" id="clearJointsBtn">Clear</button>
+          </div>
+          <div class="card-b">
+            <div class="row between" style="margin-bottom:10px">
+              <span class="small muted" style="font-weight:700">Side</span>
+              <div class="seg" id="latGroup">
+                <button type="button" data-lat="" aria-pressed="true">Auto</button>
+                <button type="button" data-lat="Right">Rt</button>
+                <button type="button" data-lat="Left">Lt</button>
+                <button type="button" data-lat="Bilateral">Bilat</button>
+              </div>
+            </div>
+            <div class="skel-wrap">
+              <div class="sides"><span>Right</span><span>Left</span></div>
+<svg id="skeletonSvg" viewBox="0 0 260 440" role="group" aria-label="Skeleton map: select affected regions">
+                <!-- Subtle Diagnostic Grid Lines -->
+                <line x1="130" y1="10" x2="130" y2="430" stroke="#1e293b" stroke-dasharray="4 4" stroke-width="1" />
+                <line x1="20" y1="95" x2="240" y2="95" stroke="#1e293b" stroke-dasharray="4 4" stroke-width="1" />
+                <line x1="20" y1="225" x2="240" y2="225" stroke="#1e293b" stroke-dasharray="4 4" stroke-width="1" />
+                <line x1="20" y1="320" x2="240" y2="320" stroke="#1e293b" stroke-dasharray="4 4" stroke-width="1" />
+
+                <!-- Skull & Cranium -->
+                <ellipse cx="130" cy="36" rx="22" ry="26" fill="#0f172a" stroke="#38bdf8" stroke-width="2" opacity="0.85" />
+                <rect x="121" y="56" width="18" height="10" rx="3" fill="#0f172a" stroke="#38bdf8" stroke-width="1.8" opacity="0.85" />
+
+                <!-- Spine Column -->
+                <line x1="130" y1="66" x2="130" y2="215" stroke="#38bdf8" stroke-width="7" stroke-linecap="round" opacity="0.65" />
+
+                <!-- Ribcage / Thorax -->
+                <path d="M102 96 C95 125, 98 158, 130 165 C162 158, 165 125, 158 96 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="2" opacity="0.7" />
+                <path d="M104 112 Q130 122 156 112 M102 128 Q130 138 158 128 M105 144 Q130 154 155 144" stroke="#38bdf8" stroke-width="1.6" fill="none" opacity="0.65" />
+
+                <!-- Clavicles -->
+                <path d="M130 88 Q105 82 82 94 M130 88 Q155 82 178 94" stroke="#7dd3fc" stroke-width="3.5" fill="none" stroke-linecap="round" />
+
+                <!-- Pelvis -->
+                <path d="M98 205 C88 225, 98 248, 118 242 L130 232 L142 242 C162 248, 172 225, 162 205 Z" fill="#0f172a" stroke="#38bdf8" stroke-width="2.2" opacity="0.8" />
+
+                <!-- Right Upper Limb (Viewer Left) -->
+                <line x1="82" y1="95" x2="66" y2="158" stroke="#7dd3fc" stroke-width="5" stroke-linecap="round" />
+                <line x1="66" y1="158" x2="54" y2="218" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round" />
+
+                <!-- Left Upper Limb (Viewer Right) -->
+                <line x1="178" y1="95" x2="194" y2="158" stroke="#7dd3fc" stroke-width="5" stroke-linecap="round" />
+                <line x1="194" y1="158" x2="206" y2="218" stroke="#7dd3fc" stroke-width="4" stroke-linecap="round" />
+
+                <!-- Right Lower Limb (Viewer Left) -->
+                <line x1="106" y1="232" x2="104" y2="320" stroke="#7dd3fc" stroke-width="6.5" stroke-linecap="round" />
+                <line x1="104" y1="320" x2="104" y2="402" stroke="#7dd3fc" stroke-width="5" stroke-linecap="round" />
+
+                <!-- Left Lower Limb (Viewer Right) -->
+                <line x1="154" y1="232" x2="156" y2="320" stroke="#7dd3fc" stroke-width="6.5" stroke-linecap="round" />
+                <line x1="156" y1="320" x2="156" y2="402" stroke="#7dd3fc" stroke-width="5" stroke-linecap="round" />
+
+                <!-- Interactive Clickable Joint & Bone Hotspots -->
+                <!-- 1. Cervical Spine -->
+                <circle class="joint-node" data-joint="Cervical Spine (C1-C7)" data-unit="Spine Surgery Unit" data-ao="51 (Cervical Spine)" cx="130" cy="74" r="9" fill="#14b8a6" stroke="#ccfbf1" stroke-width="2.2">
+                  <title>Cervical Spine (C1-C7)</title>
+                </circle>
+
+                <!-- 2. Thoracic Spine -->
+                <circle class="joint-node" data-joint="Thoracic Spine (T1-T12)" data-unit="Spine Surgery Unit" data-ao="52 (Thoracic Spine)" cx="130" cy="132" r="9" fill="#14b8a6" stroke="#ccfbf1" stroke-width="2.2">
+                  <title>Thoracic Spine (T1-T12)</title>
+                </circle>
+
+                <!-- 3. Lumbar Spine -->
+                <circle class="joint-node" data-joint="Lumbar Spine &amp; Lumbosacral (L1-S1)" data-unit="Spine Surgery Unit" data-ao="53 (Lumbar Spine)" cx="130" cy="186" r="10" fill="#14b8a6" stroke="#ccfbf1" stroke-width="2.2">
+                  <title>Lumbar Spine &amp; Lumbosacral (L1-S1)</title>
+                </circle>
+
+                <!-- 4. Right Shoulder & Clavicle -->
+                <circle class="joint-node" data-joint="Right Shoulder &amp; Clavicle" data-unit="Arthroscopy &amp; Sports Medicine Unit" data-ao="15 / 11 (Clavicle / Proximal Humerus)" cx="82" cy="95" r="10" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Shoulder &amp; Clavicle</title>
+                </circle>
+
+                <!-- 5. Left Shoulder & Clavicle -->
+                <circle class="joint-node" data-joint="Left Shoulder &amp; Clavicle" data-unit="Arthroscopy &amp; Sports Medicine Unit" data-ao="15 / 11 (Clavicle / Proximal Humerus)" cx="178" cy="95" r="10" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Shoulder &amp; Clavicle</title>
+                </circle>
+
+                <!-- 6. Right Elbow & Distal Humerus -->
+                <circle class="joint-node" data-joint="Right Elbow &amp; Forearm" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="13 / 2R (Distal Humerus / Radius-Ulna)" cx="66" cy="158" r="9" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Elbow &amp; Forearm</title>
+                </circle>
+
+                <!-- 7. Left Elbow & Distal Humerus -->
+                <circle class="joint-node" data-joint="Left Elbow &amp; Forearm" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="13 / 2R (Distal Humerus / Radius-Ulna)" cx="194" cy="158" r="9" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Elbow &amp; Forearm</title>
+                </circle>
+
+                <!-- 8. Right Wrist & Hand -->
+                <circle class="joint-node" data-joint="Right Wrist, Carpus &amp; Hand" data-unit="Hand, Upper Limb &amp; Microsurgery Unit" data-ao="23 / 7 (Distal Radius / Hand)" cx="52" cy="224" r="9.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Wrist, Carpus &amp; Hand</title>
+                </circle>
+
+                <!-- 9. Left Wrist & Hand -->
+                <circle class="joint-node" data-joint="Left Wrist, Carpus &amp; Hand" data-unit="Hand, Upper Limb &amp; Microsurgery Unit" data-ao="23 / 7 (Distal Radius / Hand)" cx="208" cy="224" r="9.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Wrist, Carpus &amp; Hand</title>
+                </circle>
+
+                <!-- 10. Pelvis & Sacroiliac Ring -->
+                <circle class="joint-node" data-joint="Pelvic Ring &amp; Acetabulum" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="61 / 62 (Pelvic Ring / Acetabulum)" cx="130" cy="222" r="9" fill="#14b8a6" stroke="#ccfbf1" stroke-width="2.2">
+                  <title>Pelvic Ring &amp; Acetabulum</title>
+                </circle>
+
+                <!-- 11. Right Hip & Proximal Femur -->
+                <circle class="joint-node" data-joint="Right Hip &amp; Femoral Neck" data-unit="Arthroplasty &amp; Joint Replacement Unit" data-ao="31 (Proximal Femur)" cx="102" cy="236" r="10.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Hip &amp; Femoral Neck</title>
+                </circle>
+
+                <!-- 12. Left Hip & Proximal Femur -->
+                <circle class="joint-node" data-joint="Left Hip &amp; Femoral Neck" data-unit="Arthroplasty &amp; Joint Replacement Unit" data-ao="31 (Proximal Femur)" cx="158" cy="236" r="10.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Hip &amp; Femoral Neck</title>
+                </circle>
+
+                <!-- 13. Right Femoral Shaft -->
+                <circle class="joint-node" data-joint="Right Femoral Shaft" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="32 (Femoral Diaphysis)" cx="104" cy="278" r="8.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Femoral Shaft</title>
+                </circle>
+
+                <!-- 14. Left Femoral Shaft -->
+                <circle class="joint-node" data-joint="Left Femoral Shaft" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="32 (Femoral Diaphysis)" cx="156" cy="278" r="8.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Femoral Shaft</title>
+                </circle>
+
+                <!-- 15. Right Knee & Meniscus/ACL -->
+                <circle class="joint-node" data-joint="Right Knee Joint (ACL / Meniscus / Tibial Plateau)" data-unit="Arthroscopy &amp; Sports Medicine Unit" data-ao="33 / 41 (Distal Femur / Proximal Tibia)" cx="104" cy="322" r="11" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Knee Joint</title>
+                </circle>
+
+                <!-- 16. Left Knee & Meniscus/ACL -->
+                <circle class="joint-node" data-joint="Left Knee Joint (ACL / Meniscus / Tibial Plateau)" data-unit="Arthroscopy &amp; Sports Medicine Unit" data-ao="33 / 41 (Distal Femur / Proximal Tibia)" cx="156" cy="322" r="11" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Knee Joint</title>
+                </circle>
+
+                <!-- 17. Right Tibia & Fibula Shaft -->
+                <circle class="joint-node" data-joint="Right Tibia &amp; Fibula Shaft" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="42 (Tibial Diaphysis)" cx="104" cy="364" r="8.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Tibia &amp; Fibula Shaft</title>
+                </circle>
+
+                <!-- 18. Left Tibia & Fibula Shaft -->
+                <circle class="joint-node" data-joint="Left Tibia &amp; Fibula Shaft" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="42 (Tibial Diaphysis)" cx="156" cy="364" r="8.5" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Tibia &amp; Fibula Shaft</title>
+                </circle>
+
+                <!-- 19. Right Ankle & Foot -->
+                <circle class="joint-node" data-joint="Right Ankle Malleoli &amp; Foot" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="44 / 8 (Malleolar / Foot)" cx="100" cy="404" r="10" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Right Ankle &amp; Foot</title>
+                </circle>
+
+                <!-- 20. Left Ankle & Foot -->
+                <circle class="joint-node" data-joint="Left Ankle Malleoli &amp; Foot" data-unit="Trauma &amp; Ilizarov Reconstruction Unit" data-ao="44 / 8 (Malleolar / Foot)" cx="160" cy="404" r="10" fill="#0ea5e9" stroke="#e0f2fe" stroke-width="2.2">
+                  <title>Left Ankle &amp; Foot</title>
+                </circle>
+              </svg>
+            </div>
+            <div style="margin-top:12px">
+              <div class="row between small" style="margin-bottom:6px"><b>Selected</b><span class="muted" id="jointCount">0</span></div>
+              <div class="pills" id="jointPills"></div>
+            </div>
+            <details style="margin-top:10px">
+              <summary class="small" style="cursor:pointer;font-weight:700">Choose from list (keyboard)</summary>
+              <div id="jointChecklist" class="checks" style="margin-top:8px;grid-template-columns:1fr"></div>
+            </details>
+          </div>
+        </div>
+
+        <!-- Form -->
+        <form id="regForm" class="card" novalidate>
+          <div class="card-h" style="background:linear-gradient(90deg,#0f766e,#155e75);color:#fff;border-radius:var(--radius) var(--radius) 0 0">
+            <div><div class="eyebrow" style="color:#99f6e4">Step 2</div><h3>Clinical &amp; demographic intake</h3></div>
+            <span id="triageLive" class="badge t-routine">Routine</span>
+          </div>
+          <div class="card-b" style="display:flex;flex-direction:column;gap:18px">
+            <div id="editBanner" class="edit-banner hidden"></div>
+            <div id="dupBox" class="dup hidden" role="alert"></div>
+
+            <div>
+              <div class="sec-title"><span class="n">1</span>Identity &amp; contact</div>
+              <div class="grid g4">
+                <div class="span2"><label class="lbl" for="f_name">Full name <span class="req">*</span></label><input class="inp" id="f_name" required placeholder="English or Arabic / الاسم بالكامل"></div>
+                <div class="span2"><label class="lbl" for="f_national_id">National ID (الرقم القومي)</label><input class="inp mono" id="f_national_id" inputmode="numeric" maxlength="14" placeholder="14 digits"><div class="help" id="idHelp">Fills birth date, age and sex automatically</div></div>
+                <div><label class="lbl" for="f_dob">Date of birth</label><input class="inp" id="f_dob" type="date"></div>
+                <div><label class="lbl" for="f_age">Age (years) <span class="req">*</span></label><input class="inp" id="f_age" type="number" min="0" max="120" required></div>
+                <div><label class="lbl" for="f_sex">Sex <span class="req">*</span></label><select class="inp" id="f_sex" required><option value="">—</option><option>Male</option><option>Female</option></select></div>
+                <div><label class="lbl" for="f_phone">Mobile <span class="req">*</span></label><input class="inp mono" id="f_phone" type="tel" inputmode="tel" required placeholder="01XXXXXXXXX"></div>
+                <div><label class="lbl" for="f_alt_phone">Alternative phone</label><input class="inp mono" id="f_alt_phone" type="tel" inputmode="tel"></div>
+                <div><label class="lbl" for="f_district">District</label><select class="inp" id="f_district"></select></div>
+                <div class="span2"><label class="lbl" for="f_address">Address / village</label><input class="inp" id="f_address"></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="sec-title"><span class="n">2</span>Presentation &amp; routing</div>
+              <div class="grid g4">
+                <div class="span2"><label class="lbl" for="f_admission_type">Pathway</label><select class="inp" id="f_admission_type"></select></div>
+                <div class="span2"><label class="lbl" for="f_referral">Referred from</label><input class="inp" id="f_referral" placeholder="e.g. Desouk General Hospital, private clinic"></div>
+                <div class="span2"><label class="lbl" for="f_mechanism">Mechanism / presentation</label><select class="inp" id="f_mechanism"></select></div>
+                <div class="span2"><label class="lbl" for="f_unit">Unit (auto-suggested)</label><select class="inp accent" id="f_unit"></select></div>
+                <div class="span3"><label class="lbl" for="f_diagnosis">Diagnosis</label><input class="inp" id="f_diagnosis" placeholder="e.g. Closed Rt distal radius fracture, extra-articular" list="dxList"><datalist id="dxList"></datalist></div>
+                <div><label class="lbl" for="f_ao_code">AO/OTA code</label><input class="inp mono" id="f_ao_code" placeholder="auto from map"></div>
+                <div class="span2"><label class="lbl" for="f_consultant">Responsible consultant</label><input class="inp" id="f_consultant" list="surgeonList"></div>
+                <div class="span2"><label class="lbl" for="f_status">Current status</label><select class="inp" id="f_status"></select></div>
+              </div>
+            </div>
+
+            <div>
+              <div class="sec-title"><span class="n">3</span>Assessment &amp; triage</div>
+              <div class="vas">
+                <div class="row between"><label class="lbl" for="f_pain_vas" style="margin:0">Pain (VAS 0–10)</label><span class="badge t-priority" id="vasLabel">5 / 10</span></div>
+                <input id="f_pain_vas" type="range" min="0" max="10" value="5">
+              </div>
+              <div class="grid g2" style="margin-top:12px">
+                <div><span class="lbl">Red flags</span><div class="checks" id="redFlags" style="grid-template-columns:1fr"></div></div>
+                <div><span class="lbl">Imaging requested</span><div class="checks" id="imaging"></div>
+                  <span class="lbl" style="margin-top:10px">Comorbidities</span><div class="checks" id="comorbidities"></div></div>
+              </div>
+              <div class="grid g2" style="margin-top:12px">
+                <div><label class="lbl" for="f_triage">Triage</label><select class="inp" id="f_triage"><option value="">Auto (calculated)</option></select></div>
+              </div>
+              <div style="margin-top:12px"><label class="lbl" for="f_notes">Clinical notes</label><textarea class="inp" id="f_notes" placeholder="Examination findings, plan…"></textarea></div>
+            </div>
+          </div>
+          <div class="form-foot">
+            <span class="small muted" id="regFootNote">A record number (MRN) is generated automatically.</span>
+            <div class="row">
+              <button class="btn" type="button" id="cancelEditBtn">Clear form</button>
+              <button class="btn primary" type="submit" id="saveBtn">Register patient →</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============ PATIENTS ============ -->
+    <section id="view-patients" class="view hidden">
+      <div class="view-head">
+        <div><div class="eyebrow">Registry</div><h2>Patients</h2></div>
+        <div class="row">
+          <button class="btn" type="button" id="refreshBtn">↻ Refresh</button>
+          <button class="btn" type="button" id="exportFilteredBtn">⬇ Export list (Excel)</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-b">
+          <div class="filters">
+            <div class="f-search"><label class="lbl" for="q">Search</label><input class="inp" id="q" type="search" placeholder="Name, MRN, National ID, phone, diagnosis…"></div>
+            <div><label class="lbl" for="fUnit">Unit</label><select class="inp" id="fUnit"></select></div>
+            <div><label class="lbl" for="fStatus">Status</label><select class="inp" id="fStatus"></select></div>
+            <div><label class="lbl" for="fTriage">Triage</label><select class="inp" id="fTriage"></select></div>
+            <div><label class="lbl" for="fSort">Sort</label><select class="inp" id="fSort">
+              <option value="new">Newest first</option><option value="old">Oldest first</option><option value="name">Name A–Z</option><option value="triage">Triage (most urgent)</option><option value="updated">Recently updated</option></select></div>
+            <div><label class="lbl" for="fFrom">Registered from</label><input class="inp" id="fFrom" type="date"></div>
+            <div><label class="lbl" for="fTo">to</label><input class="inp" id="fTo" type="date"></div>
+            <div><button class="btn" type="button" id="clearFiltersBtn">Reset filters</button></div>
+          </div>
+        </div>
+        <div class="tbl-wrap">
+          <table class="tbl cards">
+            <thead><tr><th>MRN</th><th>Patient</th><th>Phone</th><th>Unit</th><th>Diagnosis / region</th><th>Triage</th><th>Status</th><th>Registered</th></tr></thead>
+            <tbody id="patientRows"></tbody>
+          </table>
+        </div>
+        <div class="pager"><span id="pagerInfo"></span><div class="row"><button class="btn sm" id="prevPage" type="button">← Prev</button><button class="btn sm" id="nextPage" type="button">Next →</button></div></div>
+      </div>
+    </section>
+
+    <!-- ============ OPERATIVE LIST ============ -->
+    <section id="view-or" class="view hidden">
+      <div class="view-head">
+        <div><div class="eyebrow">Theatre</div><h2>Operative list</h2></div>
+        <div class="row">
+          <button class="btn icon" type="button" id="orPrev" aria-label="Previous day">←</button>
+          <input class="inp" type="date" id="orDate" style="width:auto">
+          <button class="btn icon" type="button" id="orNext" aria-label="Next day">→</button>
+          <button class="btn" type="button" id="orToday">Today</button>
+          <button class="btn" type="button" id="orPrint">🖨 Print list</button>
+          <button class="btn primary" type="button" id="orAdd">+ Add case</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-h"><h3 id="orDayTitle"></h3><span class="small muted" id="orDaySummary"></span></div><div id="orDayBody"></div></div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-h"><h3>Waiting for surgery (not yet booked)</h3><span class="small muted">Patients with status “Awaiting surgery”</span></div>
+        <div id="orWaiting"></div>
+      </div>
+      <div class="card" style="margin-top:16px">
+        <div class="card-h"><h3>Next 14 days</h3></div>
+        <div id="orUpcoming"></div>
+      </div>
+    </section>
+
+    <!-- ============ REPORTS ============ -->
+    <section id="view-reports" class="view hidden">
+      <div class="view-head">
+        <div><div class="eyebrow">Department</div><h2>Reports &amp; statistics</h2></div>
+        <div class="row">
+          <label class="small muted" for="rFrom">From</label><input class="inp" type="date" id="rFrom" style="width:auto">
+          <label class="small muted" for="rTo">to</label><input class="inp" type="date" id="rTo" style="width:auto">
+          <button class="btn primary" type="button" id="exportAllBtn">⬇ Full backup (Excel)</button>
+        </div>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <div class="grid g2" style="margin-top:16px">
+        <div class="card"><div class="card-h"><h3>Registrations per month</h3><span class="small muted">last 12 months</span></div><div class="card-b"><div class="cols" id="chartMonthly"></div></div></div>
+        <div class="card"><div class="card-h"><h3>Operations per month</h3><span class="small muted">done, last 12 months</span></div><div class="card-b"><div class="cols" id="chartOps"></div></div></div>
+        <div class="card"><div class="card-h"><h3>By unit</h3></div><div class="card-b bars" id="chartUnit"></div></div>
+        <div class="card"><div class="card-h"><h3>By status</h3></div><div class="card-b bars" id="chartStatus"></div></div>
+        <div class="card"><div class="card-h"><h3>By mechanism</h3></div><div class="card-b bars" id="chartMech"></div></div>
+        <div class="card"><div class="card-h"><h3>By district</h3></div><div class="card-b bars" id="chartDistrict"></div></div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Patient drawer -->
+<div id="drawer" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="dName">
+  <div class="drawer" id="drawerPanel"></div>
+</div>
+
+<!-- Booking modal -->
+<div id="bookModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="bookTitle">
+  <form class="modal-box" id="bookForm" novalidate>
+    <div class="card-h"><h3 id="bookTitle">Book operation</h3><button class="btn ghost icon" type="button" data-close="bookModal" aria-label="Close">✕</button></div>
+    <div class="card-b grid g2">
+      <div class="span4 ac" id="bookPatientPick">
+        <label class="lbl" for="b_patient_q">Patient <span class="req">*</span></label>
+        <input class="inp" id="b_patient_q" autocomplete="off" placeholder="Type name, MRN, phone or National ID">
+        <div class="ac-list hidden" id="b_ac"></div>
+        <div class="help" id="b_patient_sel"></div>
+      </div>
+      <div><label class="lbl" for="b_op_date">Date <span class="req">*</span></label><input class="inp" id="b_op_date" type="date" required></div>
+      <div><label class="lbl" for="b_theatre">Theatre</label><select class="inp" id="b_theatre"></select></div>
+      <div class="span4"><label class="lbl" for="b_procedure">Procedure <span class="req">*</span></label><input class="inp" id="b_procedure" required list="procList" placeholder="e.g. ORIF Rt distal radius with volar locked plate"><datalist id="procList"></datalist></div>
+      <div><label class="lbl" for="b_side">Side</label><select class="inp" id="b_side"><option value="">—</option><option>Right</option><option>Left</option><option>Bilateral</option><option>N/A</option></select></div>
+      <div><label class="lbl" for="b_surgeon">Surgeon</label><input class="inp" id="b_surgeon" list="surgeonList"></div>
+      <div><label class="lbl" for="b_anesthesia">Anaesthesia</label><select class="inp" id="b_anesthesia"><option value="">—</option><option>General</option><option>Spinal</option><option>Regional block</option><option>Local</option><option>Sedation</option></select></div>
+      <div><label class="lbl" for="b_implant">Implant / equipment</label><input class="inp" id="b_implant"></div>
+      <div><label class="lbl" for="b_status">Status</label><select class="inp" id="b_status"></select></div>
+      <div><label class="lbl" for="b_order_no">Order on list</label><input class="inp" id="b_order_no" type="number" min="1"></div>
+      <div class="span4"><label class="lbl" for="b_notes">Notes</label><input class="inp" id="b_notes" placeholder="Pre-op labs, consent, blood, C-arm…"></div>
+    </div>
+    <div class="form-foot"><span></span><div class="row"><button class="btn" type="button" data-close="bookModal">Cancel</button><button class="btn primary" type="submit" id="bookSave">Save booking</button></div></div>
+  </form>
+</div>
+
+<!-- Password modal -->
+<div id="pwModal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+  <form class="modal-box" id="pwForm" novalidate style="width:min(420px,100%)">
+    <div class="card-h"><h3 id="pwTitle">Change password</h3><button class="btn ghost icon" type="button" data-close="pwModal" aria-label="Close">✕</button></div>
+    <div class="card-b" style="display:flex;flex-direction:column;gap:12px">
+      <p class="small muted" id="pwIntro" style="margin:0">Choose a new password of at least 8 characters.</p>
+      <div><label class="lbl" for="pw1">New password</label><input class="inp" id="pw1" type="password" autocomplete="new-password" minlength="8" required></div>
+      <div><label class="lbl" for="pw2">Repeat new password</label><input class="inp" id="pw2" type="password" autocomplete="new-password" minlength="8" required></div>
+    </div>
+    <div class="form-foot"><span></span><div class="row"><button class="btn" type="button" data-close="pwModal">Cancel</button><button class="btn primary" type="submit" id="pwSave">Save password</button></div></div>
+  </form>
+</div>
+
+<datalist id="surgeonList"></datalist>
+<div id="toast" class="hidden" role="status" aria-live="polite"></div>
+<div id="printArea"></div>
+
+<script src="config.js"></script>
+<script src="supabase.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

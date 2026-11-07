@@ -1,0 +1,11 @@
+{
+  "name": "KFSU Orthopedic & Trauma Surgery Patient Registry",
+  "short_name": "KFSU Ortho",
+  "description": "Patient registration, follow-up and operative-list registry for the Orthopedic Department, Kafr El-Sheikh University Hospital",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0d9488",
+  "lang": "en",
+  "dir": "ltr"
+}
